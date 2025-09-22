@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Core colors - Dark cosmic theme */
+    --background: 240 20% 4%;
+    --foreground: 210 40% 98%;
+    
+    /* Deep space colors */
+    --card: 240 15% 8%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 240 18% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Electric blue primary */
+    --primary: 217 91% 60%;
+    --primary-foreground: 240 20% 4%;
+    --primary-glow: 217 100% 70%;
+    
+    /* Purple secondary */
+    --secondary: 270 60% 50%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-glow: 270 100% 65%;
+    
+    /* Muted tones */
+    --muted: 240 12% 16%;
+    --muted-foreground: 215 20% 65%;
+    
+    /* Neon accent */
+    --accent: 180 100% 50%;
+    --accent-foreground: 240 20% 4%;
+    --accent-glow: 180 100% 60%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 240 10% 20%;
+    --input: 240 12% 16%;
+    --ring: 217 91% 60%;
+    
+    --radius: 0.75rem;
+    
+    /* Particle colors */
+    --particle-primary: 217 91% 60%;
+    --particle-secondary: 270 60% 50%;
+    --particle-highlight: 180 100% 50%;
+    
+    /* Gradients */
+    --gradient-cosmic: linear-gradient(135deg, hsl(240 20% 4%), hsl(240 15% 8%));
+    --gradient-aurora: linear-gradient(135deg, hsl(217 91% 60%), hsl(270 60% 50%), hsl(180 100% 50%));
+    --gradient-glow: radial-gradient(circle, hsl(217 100% 70% / 0.3), transparent 70%);
+    --gradient-panel: linear-gradient(180deg, hsl(240 18% 10% / 0.95), hsl(240 20% 4% / 0.98));
+    
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.3);
+    --shadow-panel: 0 10px 40px hsl(240 20% 0% / 0.5);
+    --shadow-button: 0 4px 20px hsl(217 91% 60% / 0.2);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Dark mode is default for this cosmic theme */
+  .dark {
+    --background: 240 20% 4%;
+    --foreground: 210 40% 98%;
+    
+    --card: 240 15% 8%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 240 18% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 240 20% 4%;
+    
+    --secondary: 270 60% 50%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 240 12% 16%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 180 100% 50%;
+    --accent-foreground: 240 20% 4%;
+    
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 240 10% 20%;
+    --input: 240 12% 16%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
