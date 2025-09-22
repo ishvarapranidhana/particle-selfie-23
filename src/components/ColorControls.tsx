@@ -18,8 +18,11 @@ interface ColorControlsProps {
   showBackgroundParticles: boolean;
   showStaticParticles: boolean;
   hideNonMovingParticles: boolean;
-  blendMode: string;
+  motionBlendMode: string;
+  backgroundBlendMode: string;
+  staticBlendMode: string;
   enableBlendMode: boolean;
+  layerOrder: string[];
   onMotionParticlesColorChange: (color: string) => void;
   onNonMovingParticlesColorChange: (color: string) => void;
   onBackgroundParticlesColorChange: (color: string) => void;
@@ -29,8 +32,11 @@ interface ColorControlsProps {
   onToggleBackgroundParticles: (show: boolean) => void;
   onToggleStaticParticles: (show: boolean) => void;
   onToggleHideNonMovingParticles: (show: boolean) => void;
-  onBlendModeChange: (mode: string) => void;
+  onMotionBlendModeChange: (mode: string) => void;
+  onBackgroundBlendModeChange: (mode: string) => void;
+  onStaticBlendModeChange: (mode: string) => void;
   onToggleBlendMode: (enabled: boolean) => void;
+  onLayerOrderChange: (order: string[]) => void;
 }
 
 const presetColors = [
@@ -78,8 +84,11 @@ export default function ColorControls({
   showBackgroundParticles,
   showStaticParticles,
   hideNonMovingParticles,
-  blendMode,
+  motionBlendMode,
+  backgroundBlendMode,
+  staticBlendMode,
   enableBlendMode,
+  layerOrder,
   onMotionParticlesColorChange,
   onNonMovingParticlesColorChange,
   onBackgroundParticlesColorChange,
@@ -89,8 +98,11 @@ export default function ColorControls({
   onToggleBackgroundParticles,
   onToggleStaticParticles,
   onToggleHideNonMovingParticles,
-  onBlendModeChange,
+  onMotionBlendModeChange,
+  onBackgroundBlendModeChange,
+  onStaticBlendModeChange,
   onToggleBlendMode,
+  onLayerOrderChange,
 }: ColorControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -101,7 +113,10 @@ export default function ColorControls({
     isEnabled: boolean,
     onColorChange: (color: string) => void,
     onToggle: (enabled: boolean) => void,
-    icon: React.ReactNode
+    icon: React.ReactNode,
+    blendMode: string,
+    onBlendModeChange: (mode: string) => void,
+    layerId: string
   ) => (
     <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
       <div className="flex items-center justify-between">
@@ -155,6 +170,60 @@ export default function ColorControls({
                 title={preset.name}
               />
             ))}
+          </div>
+          
+          {enableBlendMode && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Blend Mode</Label>
+              <Select value={blendMode} onValueChange={onBlendModeChange}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Select blend mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {blendModes.map((mode) => (
+                    <SelectItem key={mode.value} value={mode.value}>
+                      {mode.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Layer Order</Label>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const currentIndex = layerOrder.indexOf(layerId);
+                  if (currentIndex > 0) {
+                    const newOrder = [...layerOrder];
+                    [newOrder[currentIndex], newOrder[currentIndex - 1]] = [newOrder[currentIndex - 1], newOrder[currentIndex]];
+                    onLayerOrderChange(newOrder);
+                  }
+                }}
+                className="h-6 w-6 p-0"
+              >
+                ↑
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const currentIndex = layerOrder.indexOf(layerId);
+                  if (currentIndex < layerOrder.length - 1) {
+                    const newOrder = [...layerOrder];
+                    [newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]];
+                    onLayerOrderChange(newOrder);
+                  }
+                }}
+                className="h-6 w-6 p-0"
+              >
+                ↓
+              </Button>
+            </div>
           </div>
         </motion.div>
       )}
@@ -212,7 +281,10 @@ export default function ColorControls({
                 showMotionParticles,
                 onMotionParticlesColorChange,
                 onToggleMotionParticles,
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />,
+                motionBlendMode,
+                onMotionBlendModeChange,
+                'motion'
               )}
               
               {/* Non-Moving Particles Color */}
@@ -282,7 +354,10 @@ export default function ColorControls({
                 showStaticParticles,
                 onStaticParticlesColorChange,
                 onToggleStaticParticles,
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400" />
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400" />,
+                staticBlendMode,
+                onStaticBlendModeChange,
+                'static'
               )}
 
               <Separator />
@@ -295,7 +370,10 @@ export default function ColorControls({
                 showBackgroundParticles,
                 onBackgroundParticlesColorChange,
                 onToggleBackgroundParticles,
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-violet-400 to-purple-600" />
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-violet-400 to-purple-600" />,
+                backgroundBlendMode,
+                onBackgroundBlendModeChange,
+                'background'
               )}
 
               <Separator />
@@ -339,14 +417,14 @@ export default function ColorControls({
 
               <Separator />
 
-              {/* Blend Mode Controls */}
+              {/* Global Blend Mode Controls */}
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Blend className="w-4 h-4 text-accent" />
                     <div>
-                      <Label className="text-sm font-medium">Canvas Blending</Label>
-                      <p className="text-xs text-muted-foreground">Photoshop-like blend modes</p>
+                      <Label className="text-sm font-medium">Per-Layer Blending</Label>
+                      <p className="text-xs text-muted-foreground">Enable individual blend modes</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -357,28 +435,6 @@ export default function ColorControls({
                     />
                   </div>
                 </div>
-                
-                {enableBlendMode && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2"
-                  >
-                    <Select value={blendMode} onValueChange={onBlendModeChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select blend mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {blendModes.map((mode) => (
-                          <SelectItem key={mode.value} value={mode.value}>
-                            {mode.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </motion.div>
-                )}
               </div>
 
               <Separator />
