@@ -52,7 +52,9 @@ const Index = () => {
           showBackgroundParticles={showBackgroundParticles}
           showStaticParticles={showStaticParticles}
           hideNonMovingParticles={hideNonMovingParticles}
-          blendMode={blendMode}
+          motionBlendMode={blendMode}
+          backgroundBlendMode={blendMode}
+          staticBlendMode={blendMode}
           enableBlendMode={enableBlendMode}
         />
         

@@ -15,12 +15,34 @@ interface ParticleCanvasProps {
   showBackgroundParticles: boolean;
   showStaticParticles: boolean;
   hideNonMovingParticles: boolean;
-  blendMode: string;
+  motionBlendMode?: string;
+  backgroundBlendMode?: string;
+  staticBlendMode?: string;
   enableBlendMode: boolean;
 }
 
+// Helper function to get THREE.js blend mode
+const getBlending = (mode?: string, enableBlendMode?: boolean) => {
+  if (!enableBlendMode || !mode) return THREE.AdditiveBlending;
+  
+  switch (mode) {
+    case 'multiply': return THREE.MultiplyBlending;
+    case 'screen': return THREE.AdditiveBlending;
+    case 'normal': return THREE.NormalBlending;
+    default: return THREE.AdditiveBlending;
+  }
+};
+
 // Background particle plane (farthest back)
-function BackgroundParticles({ particleColor }: { particleColor: string }) {
+function BackgroundParticles({ 
+  particleColor, 
+  blendMode, 
+  enableBlendMode 
+}: { 
+  particleColor: string; 
+  blendMode?: string; 
+  enableBlendMode: boolean; 
+}) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
@@ -99,7 +121,7 @@ function BackgroundParticles({ particleColor }: { particleColor: string }) {
         ref={materialRef}
         size={0.015}
         vertexColors
-        blending={THREE.AdditiveBlending}
+        blending={getBlending(blendMode, enableBlendMode)}
         transparent
         opacity={0.4}
         sizeAttenuation
@@ -109,7 +131,15 @@ function BackgroundParticles({ particleColor }: { particleColor: string }) {
 }
 
 // Static particles (middle layer)
-function StaticParticles({ particleColor }: { particleColor: string }) {
+function StaticParticles({ 
+  particleColor, 
+  blendMode, 
+  enableBlendMode 
+}: { 
+  particleColor: string; 
+  blendMode?: string; 
+  enableBlendMode: boolean; 
+}) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
@@ -184,7 +214,7 @@ function StaticParticles({ particleColor }: { particleColor: string }) {
         ref={materialRef}
         size={0.02}
         vertexColors
-        blending={THREE.AdditiveBlending}
+        blending={getBlending(blendMode, enableBlendMode)}
         transparent
         opacity={0.6}
         sizeAttenuation
@@ -198,21 +228,29 @@ function MotionParticles({
   videoRef, 
   particleColor, 
   nonMovingParticleColor, 
-  hideNonMovingParticles 
+  hideNonMovingParticles,
+  blendMode,
+  enableBlendMode
 }: { 
   videoRef: React.RefObject<HTMLVideoElement>; 
   particleColor: string; 
   nonMovingParticleColor: string;
   hideNonMovingParticles: boolean;
+  blendMode?: string;
+  enableBlendMode: boolean;
 }) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
-  const [positions, colors, basePositions] = useMemo(() => {
+  // Dynamic particle grid that adapts to video aspect ratio
+  const [positions, colors, basePositions, videoAspectRatio] = useMemo(() => {
     const particleCount = 45000;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const basePositions = new Float32Array(particleCount * 3);
+    
+    // Default aspect ratio, will be updated when video loads
+    let aspectRatio = 16 / 9;
     
     const gridSize = Math.sqrt(particleCount);
     for (let i = 0; i < particleCount; i++) {
@@ -220,8 +258,8 @@ function MotionParticles({
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
       
-      // Create a flat grid in X-Y plane
-      const x = (col / gridSize - 0.5) * 10;
+      // Create a flat grid in X-Y plane that respects aspect ratio
+      const x = (col / gridSize - 0.5) * 10 * aspectRatio;
       const y = -(row / gridSize - 0.5) * 8;
       
       positions[i3] = x;
@@ -237,7 +275,7 @@ function MotionParticles({
       colors[i3 + 2] = 1;
     }
     
-    return [positions, colors, basePositions];
+    return [positions, colors, basePositions, aspectRatio];
   }, []);
   
   const canvasRef = useRef<HTMLCanvasElement>(document.createElement('canvas'));
@@ -246,42 +284,11 @@ function MotionParticles({
   const motionMapRef = useRef<Float32Array | null>(null);
   
   useEffect(() => {
-    canvasRef.current.width = 64; // Lower resolution for motion detection
-    canvasRef.current.height = 64;
+    canvasRef.current.width = 128; // Higher resolution for better motion detection
+    canvasRef.current.height = 128;
     ctxRef.current = canvasRef.current.getContext('2d', { willReadFrequently: true });
-    motionMapRef.current = new Float32Array(64 * 64);
+    motionMapRef.current = new Float32Array(128 * 128);
   }, []);
-  
-  // Sobel edge detection for contour detection
-  const detectEdges = (imageData: ImageData): Float32Array => {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
-    const edges = new Float32Array(width * height);
-    
-    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
-    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
-    
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        let pixelX = 0;
-        let pixelY = 0;
-        
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 3; j++) {
-            const idx = ((y + i - 1) * width + (x + j - 1)) * 4;
-            const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-            pixelX += gray * sobelX[i * 3 + j];
-            pixelY += gray * sobelY[i * 3 + j];
-          }
-        }
-        
-        edges[y * width + x] = Math.sqrt(pixelX * pixelX + pixelY * pixelY) / 255;
-      }
-    }
-    
-    return edges;
-  };
   
   // Advanced contour detection using Canny edge detection
   const cannyEdgeDetection = (imageData: ImageData): Float32Array => {
@@ -314,8 +321,6 @@ function MotionParticles({
     }
     
     // Sobel gradients
-    const gradX = new Float32Array(width * height);
-    const gradY = new Float32Array(width * height);
     const magnitude = new Float32Array(width * height);
     
     for (let y = 1; y < height - 1; y++) {
@@ -329,8 +334,6 @@ function MotionParticles({
           -blurred[(y-1) * width + (x-1)] - 2 * blurred[(y-1) * width + x] - blurred[(y-1) * width + (x+1)] +
           blurred[(y+1) * width + (x-1)] + 2 * blurred[(y+1) * width + x] + blurred[(y+1) * width + (x+1)];
         
-        gradX[y * width + x] = gx;
-        gradY[y * width + x] = gy;
         magnitude[y * width + x] = Math.sqrt(gx * gx + gy * gy);
       }
     }
@@ -352,6 +355,14 @@ function MotionParticles({
       const ctx = ctxRef.current;
       const canvas = canvasRef.current;
       
+      // Update canvas size to match video aspect ratio
+      const videoAspect = video.videoWidth / video.videoHeight;
+      if (videoAspect !== canvas.width / canvas.height) {
+        canvas.width = 128;
+        canvas.height = Math.round(128 / videoAspect);
+        motionMapRef.current = new Float32Array(canvas.width * canvas.height);
+      }
+      
       // Draw current frame
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -363,8 +374,8 @@ function MotionParticles({
       // Enhanced motion detection with temporal stability
       let totalMotion = 0;
       let motionPixels = 0;
-      const motionThreshold = 0.08; // Increased threshold to ignore small movements
-      const staticThreshold = 0.03; // Threshold below which pixels are considered static
+      const motionThreshold = 0.08;
+      const staticThreshold = 0.03;
       
       if (prevFrameRef.current && motionMapRef.current) {
         for (let i = 0; i < canvas.width * canvas.height; i++) {
@@ -391,10 +402,6 @@ function MotionParticles({
           }
         }
       }
-      
-      // Calculate motion scale and intensity
-      const motionScale = motionPixels / (canvas.width * canvas.height);
-      const averageMotionIntensity = motionPixels > 0 ? totalMotion / motionPixels : 0;
       
       const particlesPerRow = Math.sqrt(positions.length / 3);
       const stepX = canvas.width / particlesPerRow;
@@ -431,11 +438,11 @@ function MotionParticles({
           positions[i3] += (basePositions[i3] + offsetX - positions[i3]) * 0.4;
           positions[i3 + 1] += (basePositions[i3 + 1] + offsetY - positions[i3 + 1]) * 0.4;
           
-           // Z-axis movement based on motion intensity and contours (behind non-moving particles)
-           const zOffset = 1 - motionIntensity * contourBoost * 0.5;
-           positions[i3 + 2] += (zOffset - positions[i3 + 2]) * 0.3;
+          // Z-axis movement based on motion intensity
+          const zOffset = 1 - motionIntensity * contourBoost * 0.5;
+          positions[i3 + 2] += (zOffset - positions[i3 + 2]) * 0.3;
           
-          // Enhanced colors for moving contours - use motion particle color
+          // Enhanced colors for moving contours
           const movingColor = new THREE.Color(particleColor);
           const colorBoost = 1 + contourStrength * 0.8;
           colors[i3] = Math.min(1, movingColor.r * (currentPixels[pixelIndex] / 255) * colorBoost);
@@ -444,9 +451,9 @@ function MotionParticles({
           
         } else if (isStaticPixel) {
           // Static pixels - return to neutral state faster
-           positions[i3] += (basePositions[i3] - positions[i3]) * 0.15;
-           positions[i3 + 1] += (basePositions[i3 + 1] - positions[i3 + 1]) * 0.15;
-           positions[i3 + 2] += (4 - positions[i3 + 2]) * 0.15;
+          positions[i3] += (basePositions[i3] - positions[i3]) * 0.15;
+          positions[i3 + 1] += (basePositions[i3 + 1] - positions[i3 + 1]) * 0.15;
+          positions[i3 + 2] += (4 - positions[i3 + 2]) * 0.15;
           
           if (hideNonMovingParticles) {
             // Make non-moving particles transparent
@@ -464,9 +471,9 @@ function MotionParticles({
         } else {
           // Intermediate motion - gentle movement
           const gentleMotion = motion * 0.5;
-           positions[i3] += (basePositions[i3] - positions[i3]) * 0.08;
-           positions[i3 + 1] += (basePositions[i3 + 1] - positions[i3 + 1]) * 0.08;
-           positions[i3 + 2] += (2 + brightness * 0.2 - positions[i3 + 2]) * 0.08;
+          positions[i3] += (basePositions[i3] - positions[i3]) * 0.08;
+          positions[i3 + 1] += (basePositions[i3 + 1] - positions[i3 + 1]) * 0.08;
+          positions[i3 + 2] += (2 + brightness * 0.2 - positions[i3 + 2]) * 0.08;
           
           // Normal colors - blend between motion and non-motion colors based on motion intensity
           const motionBlend = motion / motionThreshold;
@@ -543,7 +550,7 @@ function MotionParticles({
         ref={materialRef}
         size={0.025}
         vertexColors
-        blending={THREE.AdditiveBlending}
+        blending={getBlending(blendMode, enableBlendMode)}
         transparent
         opacity={0.9}
         sizeAttenuation
@@ -563,7 +570,9 @@ export default function ParticleCanvas({
   showBackgroundParticles,
   showStaticParticles,
   hideNonMovingParticles,
-  blendMode,
+  motionBlendMode = 'normal',
+  backgroundBlendMode = 'normal',
+  staticBlendMode = 'normal',
   enableBlendMode
 }: ParticleCanvasProps) {
   const [isReady, setIsReady] = useState(false);
@@ -580,8 +589,7 @@ export default function ParticleCanvas({
       transition={{ duration: 1 }}
       className="absolute inset-0"
       style={{ 
-        background: backgroundColor,
-        mixBlendMode: enableBlendMode ? blendMode as any : 'normal'
+        background: backgroundColor
       }}
     >
       <Canvas
@@ -596,10 +604,22 @@ export default function ParticleCanvas({
         <pointLight position={[10, 10, 10]} intensity={0.8} />
         
         {/* Background particles (farthest) */}
-        {showBackgroundParticles && <BackgroundParticles particleColor={backgroundParticlesColor} />}
+        {showBackgroundParticles && (
+          <BackgroundParticles 
+            particleColor={backgroundParticlesColor} 
+            blendMode={backgroundBlendMode}
+            enableBlendMode={enableBlendMode}
+          />
+        )}
         
         {/* Static particles (middle layer) */}
-        {showStaticParticles && <StaticParticles particleColor={staticParticlesColor} />}
+        {showStaticParticles && (
+          <StaticParticles 
+            particleColor={staticParticlesColor}
+            blendMode={staticBlendMode}
+            enableBlendMode={enableBlendMode}
+          />
+        )}
         
         {/* Motion particles (closest to camera) */}
         {showMotionParticles && (
@@ -608,6 +628,8 @@ export default function ParticleCanvas({
             particleColor={motionParticlesColor}
             nonMovingParticleColor={nonMovingParticlesColor}
             hideNonMovingParticles={hideNonMovingParticles}
+            blendMode={motionBlendMode}
+            enableBlendMode={enableBlendMode}
           />
         )}
         
