@@ -15,11 +15,8 @@ const Index = () => {
   const [showBackgroundParticles, setShowBackgroundParticles] = useState(true);
   const [showStaticParticles, setShowStaticParticles] = useState(true);
   const [hideNonMovingParticles, setHideNonMovingParticles] = useState(false);
-  const [motionBlendMode, setMotionBlendMode] = useState('normal');
-  const [backgroundBlendMode, setBackgroundBlendMode] = useState('normal');
-  const [staticBlendMode, setStaticBlendMode] = useState('normal');
+  const [blendMode, setBlendMode] = useState('normal');
   const [enableBlendMode, setEnableBlendMode] = useState(false);
-  const [layerOrder, setLayerOrder] = useState(['background', 'static', 'motion']);
   
   const handleVideoReady = (ref: React.RefObject<HTMLVideoElement>) => {
     setVideoRef(ref);
@@ -55,11 +52,10 @@ const Index = () => {
           showBackgroundParticles={showBackgroundParticles}
           showStaticParticles={showStaticParticles}
           hideNonMovingParticles={hideNonMovingParticles}
-          motionBlendMode={motionBlendMode}
-          backgroundBlendMode={backgroundBlendMode}
-          staticBlendMode={staticBlendMode}
+          motionBlendMode={blendMode}
+          backgroundBlendMode={blendMode}
+          staticBlendMode={blendMode}
           enableBlendMode={enableBlendMode}
-          layerOrder={layerOrder}
         />
         
         {/* Camera View */}
@@ -76,11 +72,8 @@ const Index = () => {
           showBackgroundParticles={showBackgroundParticles}
           showStaticParticles={showStaticParticles}
           hideNonMovingParticles={hideNonMovingParticles}
-          motionBlendMode={motionBlendMode}
-          backgroundBlendMode={backgroundBlendMode}
-          staticBlendMode={staticBlendMode}
+          blendMode={blendMode}
           enableBlendMode={enableBlendMode}
-          layerOrder={layerOrder}
           onMotionParticlesColorChange={setMotionParticlesColor}
           onNonMovingParticlesColorChange={setNonMovingParticlesColor}
           onBackgroundParticlesColorChange={setBackgroundParticlesColor}
@@ -90,11 +83,8 @@ const Index = () => {
           onToggleBackgroundParticles={setShowBackgroundParticles}
           onToggleStaticParticles={setShowStaticParticles}
           onToggleHideNonMovingParticles={setHideNonMovingParticles}
-          onMotionBlendModeChange={setMotionBlendMode}
-          onBackgroundBlendModeChange={setBackgroundBlendMode}
-          onStaticBlendModeChange={setStaticBlendMode}
+          onBlendModeChange={setBlendMode}
           onToggleBlendMode={setEnableBlendMode}
-          onLayerOrderChange={setLayerOrder}
         />
       </Suspense>
       

@@ -19,7 +19,6 @@ interface ParticleCanvasProps {
   backgroundBlendMode?: string;
   staticBlendMode?: string;
   enableBlendMode: boolean;
-  layerOrder: string[];
 }
 
 // Helper function to get THREE.js blend mode
@@ -243,9 +242,9 @@ function MotionParticles({
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
-  // Dynamic particle grid that adapts to video aspect ratio - 50% more density
+  // Dynamic particle grid that adapts to video aspect ratio
   const [positions, colors, basePositions, videoAspectRatio] = useMemo(() => {
-    const particleCount = 67500; // 50% increase from 45000
+    const particleCount = 45000;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const basePositions = new Float32Array(particleCount * 3);
@@ -574,8 +573,7 @@ export default function ParticleCanvas({
   motionBlendMode = 'normal',
   backgroundBlendMode = 'normal',
   staticBlendMode = 'normal',
-  enableBlendMode,
-  layerOrder = ['background', 'static', 'motion']
+  enableBlendMode
 }: ParticleCanvasProps) {
   const [isReady, setIsReady] = useState(false);
   
@@ -595,104 +593,60 @@ export default function ParticleCanvas({
       }}
     >
       <Canvas
-        camera={{ position: [0, 0, 8], fov: 60, aspect: window.innerWidth / window.innerHeight }}
+        camera={{ position: [0, 0, 8], fov: 60 }}
         gl={{ 
           antialias: true, 
           alpha: true,
           powerPreference: "high-performance"
         }}
-        onCreated={({ camera, gl }) => {
-          // Proper aspect ratio handling for PerspectiveCamera
-          if (camera instanceof THREE.PerspectiveCamera) {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-          }
-          
-          // Handle window resize for aspect ratio
-          const handleResize = () => {
-            if (camera instanceof THREE.PerspectiveCamera) {
-              camera.aspect = window.innerWidth / window.innerHeight;
-              camera.updateProjectionMatrix();
-            }
-            gl.setSize(window.innerWidth, window.innerHeight);
-          };
-          
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }}
       >
         <ambientLight intensity={0.3} />
         <pointLight position={[10, 10, 10]} intensity={0.8} />
         
-        {/* Render layers in the specified order */}
-        {layerOrder.map((layerId, index) => {
-          const zOffset = index * 2; // Spacing between layers
-          
-          switch (layerId) {
-            case 'background':
-              return showBackgroundParticles ? (
-                <group key={layerId} position={[0, 0, -8 + zOffset]}>
-                  <BackgroundParticles 
-                    particleColor={backgroundParticlesColor} 
-                    blendMode={backgroundBlendMode}
-                    enableBlendMode={enableBlendMode}
-                  />
-                </group>
-              ) : null;
-              
-            case 'static':
-              return showStaticParticles ? (
-                <group key={layerId} position={[0, 0, -2 + zOffset]}>
-                  <StaticParticles 
-                    particleColor={staticParticlesColor}
-                    blendMode={staticBlendMode}
-                    enableBlendMode={enableBlendMode}
-                  />
-                </group>
-              ) : null;
-              
-            case 'motion':
-              return showMotionParticles ? (
-                <group key={layerId} position={[0, 0, 3 + zOffset]}>
-                  <MotionParticles 
-                    videoRef={videoRef} 
-                    particleColor={motionParticlesColor}
-                    nonMovingParticleColor={nonMovingParticlesColor}
-                    hideNonMovingParticles={hideNonMovingParticles}
-                    blendMode={motionBlendMode}
-                    enableBlendMode={enableBlendMode}
-                  />
-                </group>
-              ) : null;
-              
-            default:
-              return null;
-          }
-        })}
+        {/* Background particles (farthest) */}
+        {showBackgroundParticles && (
+          <BackgroundParticles 
+            particleColor={backgroundParticlesColor} 
+            blendMode={backgroundBlendMode}
+            enableBlendMode={enableBlendMode}
+          />
+        )}
         
-        {/* Enhanced Orbit controls with proper settings */}
+        {/* Static particles (middle layer) */}
+        {showStaticParticles && (
+          <StaticParticles 
+            particleColor={staticParticlesColor}
+            blendMode={staticBlendMode}
+            enableBlendMode={enableBlendMode}
+          />
+        )}
+        
+        {/* Motion particles (closest to camera) */}
+        {showMotionParticles && (
+          <MotionParticles 
+            videoRef={videoRef} 
+            particleColor={motionParticlesColor}
+            nonMovingParticleColor={nonMovingParticlesColor}
+            hideNonMovingParticles={hideNonMovingParticles}
+            blendMode={motionBlendMode}
+            enableBlendMode={enableBlendMode}
+          />
+        )}
+        
+        {/* Enhanced Orbit controls */}
         <OrbitControls 
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
           enableDamping={true}
-          dampingFactor={0.02}
-          minDistance={1}
-          maxDistance={30}
+          dampingFactor={0.05}
+          minDistance={2}
+          maxDistance={25}
           minPolarAngle={0}
           maxPolarAngle={Math.PI}
-          maxAzimuthAngle={Infinity}
-          minAzimuthAngle={-Infinity}
-          zoomSpeed={1.2}
-          panSpeed={1.0}
-          rotateSpeed={0.3}
-          screenSpacePanning={false}
-          keyPanSpeed={7.0}
-          autoRotate={false}
-          autoRotateSpeed={2.0}
-          reverseOrbit={false}
-          reverseHorizontalOrbit={false}
-          reverseVerticalOrbit={false}
+          zoomSpeed={0.8}
+          panSpeed={0.8}
+          rotateSpeed={0.5}
           makeDefault
         />
       </Canvas>
