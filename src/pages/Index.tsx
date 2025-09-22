@@ -15,8 +15,13 @@ const Index = () => {
   const [showBackgroundParticles, setShowBackgroundParticles] = useState(true);
   const [showStaticParticles, setShowStaticParticles] = useState(true);
   const [hideNonMovingParticles, setHideNonMovingParticles] = useState(false);
-  const [blendMode, setBlendMode] = useState('normal');
+  const [motionBlendMode, setMotionBlendMode] = useState('normal');
+  const [backgroundBlendMode, setBackgroundBlendMode] = useState('normal');
+  const [staticBlendMode, setStaticBlendMode] = useState('normal');
   const [enableBlendMode, setEnableBlendMode] = useState(false);
+  const [motionScale, setMotionScale] = useState(1.0);
+  const [backgroundScale, setBackgroundScale] = useState(1.0);
+  const [staticScale, setStaticScale] = useState(1.0);
   
   const handleVideoReady = (ref: React.RefObject<HTMLVideoElement>) => {
     setVideoRef(ref);
@@ -52,10 +57,13 @@ const Index = () => {
           showBackgroundParticles={showBackgroundParticles}
           showStaticParticles={showStaticParticles}
           hideNonMovingParticles={hideNonMovingParticles}
-          motionBlendMode={blendMode}
-          backgroundBlendMode={blendMode}
-          staticBlendMode={blendMode}
+          motionBlendMode={motionBlendMode}
+          backgroundBlendMode={backgroundBlendMode}
+          staticBlendMode={staticBlendMode}
           enableBlendMode={enableBlendMode}
+          motionScale={motionScale}
+          backgroundScale={backgroundScale}
+          staticScale={staticScale}
         />
         
         {/* Camera View */}
@@ -72,8 +80,13 @@ const Index = () => {
           showBackgroundParticles={showBackgroundParticles}
           showStaticParticles={showStaticParticles}
           hideNonMovingParticles={hideNonMovingParticles}
-          blendMode={blendMode}
+          motionBlendMode={motionBlendMode}
+          backgroundBlendMode={backgroundBlendMode}
+          staticBlendMode={staticBlendMode}
           enableBlendMode={enableBlendMode}
+          motionScale={motionScale}
+          backgroundScale={backgroundScale}
+          staticScale={staticScale}
           onMotionParticlesColorChange={setMotionParticlesColor}
           onNonMovingParticlesColorChange={setNonMovingParticlesColor}
           onBackgroundParticlesColorChange={setBackgroundParticlesColor}
@@ -83,8 +96,13 @@ const Index = () => {
           onToggleBackgroundParticles={setShowBackgroundParticles}
           onToggleStaticParticles={setShowStaticParticles}
           onToggleHideNonMovingParticles={setHideNonMovingParticles}
-          onBlendModeChange={setBlendMode}
+          onMotionBlendModeChange={setMotionBlendMode}
+          onBackgroundBlendModeChange={setBackgroundBlendMode}
+          onStaticBlendModeChange={setStaticBlendMode}
           onToggleBlendMode={setEnableBlendMode}
+          onMotionScaleChange={setMotionScale}
+          onBackgroundScaleChange={setBackgroundScale}
+          onStaticScaleChange={setStaticScale}
         />
       </Suspense>
       

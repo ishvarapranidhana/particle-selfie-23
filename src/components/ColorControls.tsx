@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, X, Layers, Eye, EyeOff, Blend } from 'lucide-react';
+import { Palette, X, Layers, Eye, EyeOff, Blend, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface ColorControlsProps {
@@ -18,8 +19,13 @@ interface ColorControlsProps {
   showBackgroundParticles: boolean;
   showStaticParticles: boolean;
   hideNonMovingParticles: boolean;
-  blendMode: string;
+  motionBlendMode: string;
+  backgroundBlendMode: string;
+  staticBlendMode: string;
   enableBlendMode: boolean;
+  motionScale: number;
+  backgroundScale: number;
+  staticScale: number;
   onMotionParticlesColorChange: (color: string) => void;
   onNonMovingParticlesColorChange: (color: string) => void;
   onBackgroundParticlesColorChange: (color: string) => void;
@@ -29,8 +35,13 @@ interface ColorControlsProps {
   onToggleBackgroundParticles: (show: boolean) => void;
   onToggleStaticParticles: (show: boolean) => void;
   onToggleHideNonMovingParticles: (show: boolean) => void;
-  onBlendModeChange: (mode: string) => void;
+  onMotionBlendModeChange: (mode: string) => void;
+  onBackgroundBlendModeChange: (mode: string) => void;
+  onStaticBlendModeChange: (mode: string) => void;
   onToggleBlendMode: (enabled: boolean) => void;
+  onMotionScaleChange: (scale: number) => void;
+  onBackgroundScaleChange: (scale: number) => void;
+  onStaticScaleChange: (scale: number) => void;
 }
 
 const presetColors = [
@@ -57,15 +68,7 @@ const blendModes = [
   { name: 'Normal', value: 'normal' },
   { name: 'Multiply', value: 'multiply' },
   { name: 'Screen', value: 'screen' },
-  { name: 'Overlay', value: 'overlay' },
-  { name: 'Darken', value: 'darken' },
-  { name: 'Lighten', value: 'lighten' },
-  { name: 'Color Dodge', value: 'color-dodge' },
-  { name: 'Color Burn', value: 'color-burn' },
-  { name: 'Hard Light', value: 'hard-light' },
-  { name: 'Soft Light', value: 'soft-light' },
-  { name: 'Difference', value: 'difference' },
-  { name: 'Exclusion', value: 'exclusion' },
+  { name: 'Additive', value: 'additive' },
 ];
 
 export default function ColorControls({
@@ -78,8 +81,13 @@ export default function ColorControls({
   showBackgroundParticles,
   showStaticParticles,
   hideNonMovingParticles,
-  blendMode,
+  motionBlendMode,
+  backgroundBlendMode,
+  staticBlendMode,
   enableBlendMode,
+  motionScale,
+  backgroundScale,
+  staticScale,
   onMotionParticlesColorChange,
   onNonMovingParticlesColorChange,
   onBackgroundParticlesColorChange,
@@ -89,8 +97,13 @@ export default function ColorControls({
   onToggleBackgroundParticles,
   onToggleStaticParticles,
   onToggleHideNonMovingParticles,
-  onBlendModeChange,
+  onMotionBlendModeChange,
+  onBackgroundBlendModeChange,
+  onStaticBlendModeChange,
   onToggleBlendMode,
+  onMotionScaleChange,
+  onBackgroundScaleChange,
+  onStaticScaleChange,
 }: ColorControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -101,6 +114,10 @@ export default function ColorControls({
     isEnabled: boolean,
     onColorChange: (color: string) => void,
     onToggle: (enabled: boolean) => void,
+    blendMode: string,
+    onBlendModeChange: (mode: string) => void,
+    scale: number,
+    onScaleChange: (scale: number) => void,
     icon: React.ReactNode
   ) => (
     <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
@@ -114,10 +131,7 @@ export default function ColorControls({
         </div>
         <div className="flex items-center gap-2">
           {isEnabled ? <Eye className="w-4 h-4 text-green-500" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
-          <Switch
-            checked={isEnabled}
-            onCheckedChange={onToggle}
-          />
+          <Switch checked={isEnabled} onCheckedChange={onToggle} />
         </div>
       </div>
       
@@ -126,35 +140,76 @@ export default function ColorControls({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="space-y-2"
+          className="space-y-3"
         >
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={currentColor}
-              onChange={(e) => onColorChange(e.target.value)}
-              className="w-12 h-8 rounded border border-border cursor-pointer"
-            />
-            <div className="flex-1 text-xs text-muted-foreground flex items-center">
-              {currentColor}
+          {/* Color Controls */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Color</Label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={currentColor}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="w-12 h-8 rounded border border-border cursor-pointer"
+              />
+              <div className="flex-1 text-xs text-muted-foreground flex items-center">
+                {currentColor}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {presetColors.map((preset) => (
+                <motion.button
+                  key={preset.name}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onColorChange(preset.value)}
+                  className={cn(
+                    "h-8 rounded border-2 transition-all",
+                    currentColor === preset.value ? "border-primary" : "border-border/30"
+                  )}
+                  style={{ backgroundColor: preset.value }}
+                  title={preset.name}
+                />
+              ))}
             </div>
           </div>
-          
-          <div className="grid grid-cols-4 gap-1.5">
-            {presetColors.map((preset) => (
-              <motion.button
-                key={preset.name}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onColorChange(preset.value)}
-                className={cn(
-                  "h-8 rounded border-2 transition-all",
-                  currentColor === preset.value ? "border-primary" : "border-border/30"
-                )}
-                style={{ backgroundColor: preset.value }}
-                title={preset.name}
-              />
-            ))}
+
+          {/* Blend Mode Controls */}
+          {enableBlendMode && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Blend className="w-3 h-3" />
+                Blend Mode
+              </Label>
+              <Select value={blendMode} onValueChange={onBlendModeChange}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {blendModes.map((mode) => (
+                    <SelectItem key={mode.value} value={mode.value}>
+                      {mode.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Scale Controls */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <Scale className="w-3 h-3" />
+              Scale: {scale.toFixed(1)}x
+            </Label>
+            <Slider
+              value={[scale]}
+              onValueChange={(value) => onScaleChange(value[0])}
+              min={0.1}
+              max={3.0}
+              step={0.1}
+              className="w-full"
+            />
           </div>
         </motion.div>
       )}
@@ -200,8 +255,17 @@ export default function ColorControls({
                   Particle Layers
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Control each layer independently
+                  Control each layer independently with blending and scaling
                 </p>
+              </div>
+
+              {/* Global Blend Mode Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+                <div className="flex items-center gap-2">
+                  <Blend className="w-4 h-4 text-accent" />
+                  <Label className="text-sm font-medium">Global Blending</Label>
+                </div>
+                <Switch checked={enableBlendMode} onCheckedChange={onToggleBlendMode} />
               </div>
               
               {/* Motion Particles Layer */}
@@ -212,6 +276,10 @@ export default function ColorControls({
                 showMotionParticles,
                 onMotionParticlesColorChange,
                 onToggleMotionParticles,
+                motionBlendMode,
+                onMotionBlendModeChange,
+                motionScale,
+                onMotionScaleChange,
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />
               )}
               
@@ -282,6 +350,10 @@ export default function ColorControls({
                 showStaticParticles,
                 onStaticParticlesColorChange,
                 onToggleStaticParticles,
+                staticBlendMode,
+                onStaticBlendModeChange,
+                staticScale,
+                onStaticScaleChange,
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400" />
               )}
 
@@ -295,6 +367,10 @@ export default function ColorControls({
                 showBackgroundParticles,
                 onBackgroundParticlesColorChange,
                 onToggleBackgroundParticles,
+                backgroundBlendMode,
+                onBackgroundBlendModeChange,
+                backgroundScale,
+                onStaticScaleChange,
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-violet-400 to-purple-600" />
               )}
 
@@ -339,50 +415,6 @@ export default function ColorControls({
 
               <Separator />
 
-              {/* Blend Mode Controls */}
-              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Blend className="w-4 h-4 text-accent" />
-                    <div>
-                      <Label className="text-sm font-medium">Canvas Blending</Label>
-                      <p className="text-xs text-muted-foreground">Photoshop-like blend modes</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enableBlendMode ? <Eye className="w-4 h-4 text-green-500" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
-                    <Switch
-                      checked={enableBlendMode}
-                      onCheckedChange={onToggleBlendMode}
-                    />
-                  </div>
-                </div>
-                
-                {enableBlendMode && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2"
-                  >
-                    <Select value={blendMode} onValueChange={onBlendModeChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select blend mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {blendModes.map((mode) => (
-                          <SelectItem key={mode.value} value={mode.value}>
-                            {mode.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </motion.div>
-                )}
-              </div>
-
-              <Separator />
-
               {/* Quick Actions */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Quick Actions</Label>
@@ -396,6 +428,9 @@ export default function ColorControls({
                       onStaticParticlesColorChange('#EC4899');
                       onBackgroundParticlesColorChange('#A855F7');
                       onBackgroundColorChange('#0A0E1A');
+                      onMotionScaleChange(1.0);
+                      onBackgroundScaleChange(1.0);
+                      onStaticScaleChange(1.0);
                     }}
                     className="text-xs"
                   >

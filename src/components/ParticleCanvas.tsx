@@ -19,6 +19,9 @@ interface ParticleCanvasProps {
   backgroundBlendMode?: string;
   staticBlendMode?: string;
   enableBlendMode: boolean;
+  motionScale: number;
+  backgroundScale: number;
+  staticScale: number;
 }
 
 // Helper function to get THREE.js blend mode
@@ -37,17 +40,19 @@ const getBlending = (mode?: string, enableBlendMode?: boolean) => {
 function BackgroundParticles({ 
   particleColor, 
   blendMode, 
-  enableBlendMode 
+  enableBlendMode,
+  scale = 1 
 }: { 
   particleColor: string; 
   blendMode?: string; 
-  enableBlendMode: boolean; 
+  enableBlendMode: boolean;
+  scale?: number;
 }) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
   const [positions, colors] = useMemo(() => {
-    const particleCount = 20000;
+    const particleCount = 40000; // Doubled density
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     
@@ -58,9 +63,9 @@ function BackgroundParticles({
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
       
-      // Spread particles across X-Y plane with some randomness
-      positions[i3] = (col / gridSize - 0.5) * 15 + (Math.random() - 0.5) * 0.5;
-      positions[i3 + 1] = (row / gridSize - 0.5) * 12 + (Math.random() - 0.5) * 0.5;
+      // Spread particles across X-Y plane with some randomness and apply scaling
+      positions[i3] = ((col / gridSize - 0.5) * 15 + (Math.random() - 0.5) * 0.5) * scale;
+      positions[i3 + 1] = ((row / gridSize - 0.5) * 12 + (Math.random() - 0.5) * 0.5) * scale;
       positions[i3 + 2] = -8 + (Math.random() - 0.5) * 0.5; // Farthest back
       
       colors[i3] = 0.3;
@@ -102,31 +107,33 @@ function BackgroundParticles({
   });
   
   return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
+    <group scale={[scale, scale, 1]}>
+      <points ref={meshRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={positions.length / 3}
+            array={positions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            count={colors.length / 3}
+            array={colors}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          ref={materialRef}
+          size={0.015}
+          vertexColors
+          blending={getBlending(blendMode, enableBlendMode)}
+          transparent
+          opacity={0.4}
+          sizeAttenuation
         />
-        <bufferAttribute
-          attach="attributes-color"
-          count={colors.length / 3}
-          array={colors}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        ref={materialRef}
-        size={0.015}
-        vertexColors
-        blending={getBlending(blendMode, enableBlendMode)}
-        transparent
-        opacity={0.4}
-        sizeAttenuation
-      />
-    </points>
+      </points>
+    </group>
   );
 }
 
@@ -134,17 +141,19 @@ function BackgroundParticles({
 function StaticParticles({ 
   particleColor, 
   blendMode, 
-  enableBlendMode 
+  enableBlendMode,
+  scale = 1 
 }: { 
   particleColor: string; 
   blendMode?: string; 
-  enableBlendMode: boolean; 
+  enableBlendMode: boolean;
+  scale?: number;
 }) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
   const [positions, colors] = useMemo(() => {
-    const particleCount = 15000;
+    const particleCount = 30000; // Doubled density
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     
@@ -154,9 +163,9 @@ function StaticParticles({
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
       
-      // Spread particles across X-Y plane
-      positions[i3] = (col / gridSize - 0.5) * 12 + (Math.random() - 0.5) * 0.3;
-      positions[i3 + 1] = (row / gridSize - 0.5) * 10 + (Math.random() - 0.5) * 0.3;
+      // Spread particles across X-Y plane with scaling
+      positions[i3] = ((col / gridSize - 0.5) * 12 + (Math.random() - 0.5) * 0.3) * scale;
+      positions[i3 + 1] = ((row / gridSize - 0.5) * 10 + (Math.random() - 0.5) * 0.3) * scale;
       positions[i3 + 2] = -2 + (Math.random() - 0.5) * 0.3; // Middle layer
       
       colors[i3] = 0.8;
@@ -195,31 +204,33 @@ function StaticParticles({
   });
   
   return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
+    <group scale={[scale, scale, 1]}>
+      <points ref={meshRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={positions.length / 3}
+            array={positions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            count={colors.length / 3}
+            array={colors}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          ref={materialRef}
+          size={0.02}
+          vertexColors
+          blending={getBlending(blendMode, enableBlendMode)}
+          transparent
+          opacity={0.6}
+          sizeAttenuation
         />
-        <bufferAttribute
-          attach="attributes-color"
-          count={colors.length / 3}
-          array={colors}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        ref={materialRef}
-        size={0.02}
-        vertexColors
-        blending={getBlending(blendMode, enableBlendMode)}
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-      />
-    </points>
+      </points>
+    </group>
   );
 }
 
@@ -230,7 +241,8 @@ function MotionParticles({
   nonMovingParticleColor, 
   hideNonMovingParticles,
   blendMode,
-  enableBlendMode
+  enableBlendMode,
+  scale = 1
 }: { 
   videoRef: React.RefObject<HTMLVideoElement>; 
   particleColor: string; 
@@ -238,13 +250,14 @@ function MotionParticles({
   hideNonMovingParticles: boolean;
   blendMode?: string;
   enableBlendMode: boolean;
+  scale?: number;
 }) {
   const meshRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   
   // Dynamic particle grid that adapts to video aspect ratio
   const [positions, colors, basePositions, videoAspectRatio] = useMemo(() => {
-    const particleCount = 45000;
+    const particleCount = 90000; // Doubled density
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const basePositions = new Float32Array(particleCount * 3);
@@ -258,9 +271,9 @@ function MotionParticles({
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
       
-      // Create a flat grid in X-Y plane that respects aspect ratio
-      const x = (col / gridSize - 0.5) * 10 * aspectRatio;
-      const y = -(row / gridSize - 0.5) * 8;
+      // Create a flat grid in X-Y plane that respects aspect ratio and apply scaling
+      const x = ((col / gridSize - 0.5) * 10 * aspectRatio) * scale;
+      const y = (-(row / gridSize - 0.5) * 8) * scale;
       
       positions[i3] = x;
       positions[i3 + 1] = y;
@@ -531,31 +544,33 @@ function MotionParticles({
   });
   
   return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
+    <group scale={[scale, scale, 1]}>
+      <points ref={meshRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={positions.length / 3}
+            array={positions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            count={colors.length / 3}
+            array={colors}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          ref={materialRef}
+          size={0.025}
+          vertexColors
+          blending={getBlending(blendMode, enableBlendMode)}
+          transparent
+          opacity={0.9}
+          sizeAttenuation
         />
-        <bufferAttribute
-          attach="attributes-color"
-          count={colors.length / 3}
-          array={colors}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        ref={materialRef}
-        size={0.025}
-        vertexColors
-        blending={getBlending(blendMode, enableBlendMode)}
-        transparent
-        opacity={0.9}
-        sizeAttenuation
-      />
-    </points>
+      </points>
+    </group>
   );
 }
 
@@ -573,7 +588,10 @@ export default function ParticleCanvas({
   motionBlendMode = 'normal',
   backgroundBlendMode = 'normal',
   staticBlendMode = 'normal',
-  enableBlendMode
+  enableBlendMode,
+  motionScale = 1,
+  backgroundScale = 1,
+  staticScale = 1
 }: ParticleCanvasProps) {
   const [isReady, setIsReady] = useState(false);
   
@@ -609,6 +627,7 @@ export default function ParticleCanvas({
             particleColor={backgroundParticlesColor} 
             blendMode={backgroundBlendMode}
             enableBlendMode={enableBlendMode}
+            scale={backgroundScale}
           />
         )}
         
@@ -618,6 +637,7 @@ export default function ParticleCanvas({
             particleColor={staticParticlesColor}
             blendMode={staticBlendMode}
             enableBlendMode={enableBlendMode}
+            scale={staticScale}
           />
         )}
         
@@ -630,6 +650,7 @@ export default function ParticleCanvas({
             hideNonMovingParticles={hideNonMovingParticles}
             blendMode={motionBlendMode}
             enableBlendMode={enableBlendMode}
+            scale={motionScale}
           />
         )}
         
@@ -639,14 +660,23 @@ export default function ParticleCanvas({
           enableZoom={true}
           enableRotate={true}
           enableDamping={true}
-          dampingFactor={0.05}
-          minDistance={2}
-          maxDistance={25}
+          dampingFactor={0.02}
+          minDistance={1}
+          maxDistance={50}
           minPolarAngle={0}
           maxPolarAngle={Math.PI}
-          zoomSpeed={0.8}
-          panSpeed={0.8}
-          rotateSpeed={0.5}
+          zoomSpeed={1.2}
+          panSpeed={1.0}
+          rotateSpeed={0.8}
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+          }}
+          touches={{
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN
+          }}
           makeDefault
         />
       </Canvas>
